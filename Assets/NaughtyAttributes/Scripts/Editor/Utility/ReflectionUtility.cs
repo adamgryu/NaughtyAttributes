@@ -8,6 +8,8 @@ namespace NaughtyAttributes.Editor
 {
     public static class ReflectionUtility
     {
+        public static Dictionary<Type, List<Type>> s_DictType = new Dictionary<Type, List<Type>>();
+
         public static IEnumerable<FieldInfo> GetAllFields(object target, Func<FieldInfo, bool> predicate)
         {
             if (target == null)
@@ -16,7 +18,8 @@ namespace NaughtyAttributes.Editor
                 yield break;
             }
 
-            List<Type> types = GetSelfAndBaseTypes(target);
+            //List<Type> types = GetSelfAndBaseTypes(target);
+            List<Type> types = GetSelfAndBaseTypes(target.GetType());
 
             for (int i = types.Count - 1; i >= 0; i--)
             {
@@ -39,7 +42,8 @@ namespace NaughtyAttributes.Editor
                 yield break;
             }
 
-            List<Type> types = GetSelfAndBaseTypes(target);
+            //List<Type> types = GetSelfAndBaseTypes(target);
+            List<Type> types = GetSelfAndBaseTypes(target.GetType());
 
             for (int i = types.Count - 1; i >= 0; i--)
             {
@@ -62,7 +66,8 @@ namespace NaughtyAttributes.Editor
                 yield break;
             }
 
-            List<Type> types = GetSelfAndBaseTypes(target);
+            //List<Type> types = GetSelfAndBaseTypes(target);
+            List<Type> types = GetSelfAndBaseTypes(target.GetType());
 
             for (int i = types.Count - 1; i >= 0; i--)
             {
@@ -121,6 +126,36 @@ namespace NaughtyAttributes.Editor
             {
                 types.Add(types.Last().BaseType);
             }
+
+            return types;
+        }
+
+        /// <summary>
+        ///		Get type and all base types of target, sorted as following:
+        ///		<para />[target's type, base type, base's base type, ...]
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        private static List<Type> GetSelfAndBaseTypes(Type targetType)
+        {
+            if (s_DictType.TryGetValue(targetType, out var cachedTypes))
+            {
+                return cachedTypes;
+            }
+
+            List<Type> types = new List<Type>(4)
+            {
+                targetType
+            };
+
+            Type lastBaseType = targetType.BaseType;
+            while (lastBaseType != null)
+            {
+                types.Add(lastBaseType);
+                lastBaseType = lastBaseType.BaseType;
+            }
+
+            s_DictType[targetType] = types;
 
             return types;
         }

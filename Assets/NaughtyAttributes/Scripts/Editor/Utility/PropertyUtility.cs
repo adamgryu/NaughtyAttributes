@@ -15,7 +15,7 @@ namespace NaughtyAttributes.Editor
             return (attributes.Length > 0) ? attributes[0] : null;
         }
 
-        public static T[] GetAttributes<T>(SerializedProperty property) where T : class
+        public static T[] GetAttributes_Original<T>(SerializedProperty property) where T : class
         {
             FieldInfo fieldInfo = ReflectionUtility.GetField(GetTargetObjectWithProperty(property), property.name);
             if (fieldInfo == null)
@@ -26,6 +26,30 @@ namespace NaughtyAttributes.Editor
             return (T[])fieldInfo.GetCustomAttributes(typeof(T), true);
         }
 
+        delegate FieldInfo GetFieldInfoAndStaticTypeFromPropertyDelegate(SerializedProperty property, out Type type);
+
+        static System.Lazy<GetFieldInfoAndStaticTypeFromPropertyDelegate> getFieldInfoFunc = new Lazy<GetFieldInfoAndStaticTypeFromPropertyDelegate>(() => {
+            MethodInfo methodInfo = typeof(UnityEditor.SerializedProperty).Assembly.GetType("UnityEditor.ScriptAttributeUtility").GetMethod("GetFieldInfoAndStaticTypeFromProperty", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            return (GetFieldInfoAndStaticTypeFromPropertyDelegate) Delegate.CreateDelegate(typeof(GetFieldInfoAndStaticTypeFromPropertyDelegate), methodInfo);
+        });
+
+        public static T[] GetAttributes<T>(SerializedProperty property) where T : class
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("GetFieldInfoFromPropertyPath");
+            //FieldInfo fieldInfo = ReflectionUtility.GetField(GetTargetObjectWithProperty(property), property.name);
+            var fieldInfo = getFieldInfoFunc.Value(property, out var type);
+            UnityEngine.Profiling.Profiler.EndSample();
+            if (fieldInfo == null)
+            {
+                return new T[] { };
+            }
+
+            return (T[])fieldInfo.GetCustomAttributes(typeof(T), true);
+        }
+
+        static Dictionary<string, GUIContent> s_guiContentLabels = new Dictionary<string, GUIContent>();
+
         public static GUIContent GetLabel(SerializedProperty property)
         {
             LabelAttribute labelAttribute = GetAttribute<LabelAttribute>(property);
@@ -33,7 +57,13 @@ namespace NaughtyAttributes.Editor
                 ? property.displayName
                 : labelAttribute.Label;
 
+            if (s_guiContentLabels.TryGetValue(labelText, out var labelContent))
+            {
+                return labelContent;
+            }
+
             GUIContent label = new GUIContent(labelText);
+            s_guiContentLabels[labelText] = label;
             return label;
         }
 
@@ -265,7 +295,7 @@ namespace NaughtyAttributes.Editor
         /// </summary>
         /// <param name="property"></param>
         /// <returns></returns>
-        public static object GetTargetObjectOfProperty(SerializedProperty property)
+        public static object GetTargetObjectOfProperty_Original(SerializedProperty property)
         {
             if (property == null)
             {
@@ -294,11 +324,72 @@ namespace NaughtyAttributes.Editor
         }
 
         /// <summary>
+        /// Gets the object the property represents.
+        /// </summary>
+        /// <param name="property"></param>
+        /// <returns></returns>
+        public static object GetTargetObjectOfProperty(SerializedProperty property)
+        {
+            // Does the same as GetTargetObjectWithProperty, the only difference was missing null check
+            return PropertyUtility.GetTargetObjectWithProperty(property, false);
+        }
+
+        /// <summary>
         /// Gets the object that the property is a member of
         /// </summary>
         /// <param name="property"></param>
         /// <returns></returns>
-        public static object GetTargetObjectWithProperty(SerializedProperty property)
+        public static object GetTargetObjectWithProperty(SerializedProperty property, bool skipLast = true)
+        {
+            if (property == null)
+            {
+                return null;
+            }
+
+            string propertyPath = property.propertyPath;
+            int idxArr = propertyPath.IndexOf('[');
+            int idxDot = propertyPath.IndexOf('.');
+            object obj = property.serializedObject.targetObject;
+
+            if (idxArr == -1 && idxDot == -1)
+            {
+                return skipLast ? obj : GetValue_Imp(obj, propertyPath);
+            }
+
+            string path = idxArr == -1 ? propertyPath : propertyPath.Replace(".Array.data[", "[");
+            bool endsWithArr = path[path.Length - 1] == ']';
+
+            string[] elements = path.Split('.');
+
+            int length = elements.Length - (skipLast ? 1 : 0);
+            for (int i = 0; i < length; i++)
+            {
+                string element = elements[i];
+                int idx = element.IndexOf('[');
+                if (idx != -1)
+                {
+                    string elementName = element.Substring(0, idx);
+                    Debug.Log(elementName);
+                    int idxTo = element.IndexOf(']');
+                    int len = idxTo - idx - 1;
+                    int index = Convert.ToInt32(element.Substring(idx + 1, len)); //Convert.ToInt32(element.Substring(idx).Replace("[", "").Replace("]", ""));
+                    obj = GetValue_Imp(obj, elementName, index);
+                }
+                else
+                {
+                    obj = GetValue_Imp(obj, element);
+                }
+            }
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Gets the object that the property is a member of
+        /// </summary>
+        /// <param name="property"></param>
+        /// <returns></returns>
+        public static object GetTargetObjectWithProperty_Original(SerializedProperty property)
         {
             string path = property.propertyPath.Replace(".Array.data[", "[");
             object obj = property.serializedObject.targetObject;
@@ -370,5 +461,6 @@ namespace NaughtyAttributes.Editor
 
             return enumerator.Current;
         }
+
     }
 }
