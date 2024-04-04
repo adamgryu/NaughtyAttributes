@@ -35,9 +35,12 @@ namespace NaughtyAttributes.Editor
 
         public override void OnInspectorGUI()
         {
+            UnityEngine.Profiling.Profiler.BeginSample("OnInspectorGUI-GetSerializedProperties");
             GetSerializedProperties(ref _serializedProperties);
-
+            UnityEngine.Profiling.Profiler.BeginSample("OnInspectorGUI-GetSerializedProperties-AnyAttr");
             bool anyNaughtyAttribute = _serializedProperties.Any(p => PropertyUtility.GetAttribute<INaughtyAttribute>(p) != null);
+            UnityEngine.Profiling.Profiler.EndSample();
+            UnityEngine.Profiling.Profiler.EndSample();
             if (!anyNaughtyAttribute)
             {
                 DrawDefaultInspector();
@@ -61,7 +64,7 @@ namespace NaughtyAttributes.Editor
                 {
                     do
                     {
-                        outSerializedProperties.Add(serializedObject.FindProperty(iterator.name));
+                        outSerializedProperties.Add(iterator.Copy());// serializedObject.FindProperty(iterator.name));
                     }
                     while (iterator.NextVisible(false));
                 }
