@@ -12,20 +12,20 @@ namespace NaughtyAttributes.Editor
     {
         private List<SerializedProperty> _serializedProperties = new List<SerializedProperty>();
         private IEnumerable<FieldInfo> _nonSerializedFields;
-        private IEnumerable<PropertyInfo> _nativeProperties;
+        private IEnumerable<PropertyInfo> _nativeProperties; 
         private IEnumerable<MethodInfo> _methods;
         private Dictionary<string, SavedBool> _foldouts = new Dictionary<string, SavedBool>();
 
         protected virtual void OnEnable()
         {
             _nonSerializedFields = ReflectionUtility.GetAllFields(
-                target, f => f.GetCustomAttributes(typeof(ShowNonSerializedFieldAttribute), true).Length > 0);
+                target, f => f.GetCustomAttributes(typeof(ShowNonSerializedFieldAttribute), true).Length > 0).ToArray();
 
             _nativeProperties = ReflectionUtility.GetAllProperties(
-                target, p => p.GetCustomAttributes(typeof(ShowNativePropertyAttribute), true).Length > 0);
+                target, p => p.GetCustomAttributes(typeof(ShowNativePropertyAttribute), true).Length > 0).ToArray();
 
             _methods = ReflectionUtility.GetAllMethods(
-                target, m => m.GetCustomAttributes(typeof(ButtonAttribute), true).Length > 0);
+                target, m => m.GetCustomAttributes(typeof(ButtonAttribute), true).Length > 0).ToArray();
         }
 
         protected virtual void OnDisable()
@@ -35,12 +35,12 @@ namespace NaughtyAttributes.Editor
 
         public override void OnInspectorGUI()
         {
-            UnityEngine.Profiling.Profiler.BeginSample("OnInspectorGUI-GetSerializedProperties");
+            //UnityEngine.Profiling.Profiler.BeginSample("OnInspectorGUI-GetSerializedProperties");
             GetSerializedProperties(ref _serializedProperties);
-            UnityEngine.Profiling.Profiler.BeginSample("OnInspectorGUI-GetSerializedProperties-AnyAttr");
+            //UnityEngine.Profiling.Profiler.BeginSample("OnInspectorGUI-GetSerializedProperties-AnyAttr");
             bool anyNaughtyAttribute = _serializedProperties.Any(p => PropertyUtility.GetAttribute<INaughtyAttribute>(p) != null);
-            UnityEngine.Profiling.Profiler.EndSample();
-            UnityEngine.Profiling.Profiler.EndSample();
+            //UnityEngine.Profiling.Profiler.EndSample();
+            //UnityEngine.Profiling.Profiler.EndSample();
             if (!anyNaughtyAttribute)
             {
                 DrawDefaultInspector();
@@ -74,22 +74,6 @@ namespace NaughtyAttributes.Editor
         protected void DrawSerializedProperties()
         {
             serializedObject.Update();
-
-            // Draw non-grouped serialized properties
-            foreach (var property in GetNonGroupedProperties(_serializedProperties))
-            {
-                if (property.name.Equals("m_Script", System.StringComparison.Ordinal))
-                {
-                    using (new EditorGUI.DisabledScope(disabled: true))
-                    {
-                        EditorGUILayout.PropertyField(property);
-                    }
-                }
-                else
-                {
-                    NaughtyEditorGUI.PropertyField_Layout(property, includeChildren: true);
-                }
-            }
 
             // Draw grouped serialized properties
             foreach (var group in GetGroupedProperties(_serializedProperties))
@@ -130,6 +114,18 @@ namespace NaughtyAttributes.Editor
                     {
                         NaughtyEditorGUI.PropertyField_Layout(property, true);
                     }
+                }
+            }
+
+            // ADAM: I think these look better at the bottom of foldouts.
+            // Draw non-grouped serialized properties
+            foreach (var property in GetNonGroupedProperties(_serializedProperties)) {
+                if (property.name.Equals("m_Script", System.StringComparison.Ordinal)) {
+                    using (new EditorGUI.DisabledScope(disabled: true)) {
+                        // EditorGUILayout.PropertyField(property);
+                    }
+                } else {
+                    NaughtyEditorGUI.PropertyField_Layout(property, includeChildren: true);
                 }
             }
 
