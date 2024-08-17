@@ -369,7 +369,6 @@ namespace NaughtyAttributes.Editor
                 if (idx != -1)
                 {
                     string elementName = element.Substring(0, idx);
-                    Debug.Log(elementName);
                     int idxTo = element.IndexOf(']');
                     int len = idxTo - idx - 1;
                     int index = Convert.ToInt32(element.Substring(idx + 1, len)); //Convert.ToInt32(element.Substring(idx).Replace("[", "").Replace("]", ""));
