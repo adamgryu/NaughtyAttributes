@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace NaughtyAttributes.Editor
+namespace NaughtyAttributes
 {
     public class NaughtyMonoBehaviour : MonoBehaviour {}
 }
