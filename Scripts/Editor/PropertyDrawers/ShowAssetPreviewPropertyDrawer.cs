@@ -72,6 +72,16 @@ namespace NaughtyAttributes.Editor
                 if (property.objectReferenceValue != null)
                 {
                     Texture2D previewTexture = AssetPreview.GetAssetPreview(property.objectReferenceValue);
+
+                    // If none is found, try seeing if this is a component that can be converted to a prefab reference.
+                    if (previewTexture == null)
+                    {
+                        var component = property.objectReferenceValue as Component;
+                        if (component != null)
+                        {
+                            previewTexture = AssetPreview.GetAssetPreview(component.gameObject);
+                        }
+                    }
                     return previewTexture;
                 }
 
