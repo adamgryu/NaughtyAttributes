@@ -7,7 +7,6 @@ using UnityEngine;
 namespace NaughtyAttributes.Editor
 {
     [CanEditMultipleObjects]
-    [CustomEditor(typeof(NaughtyScriptableObject), true)]
     [CustomEditor(typeof(NaughtyMonoBehaviour), true)]
     public class NaughtyInspector : UnityEditor.Editor
     {
