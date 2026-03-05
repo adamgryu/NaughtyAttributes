@@ -2,5 +2,5 @@ using UnityEngine;
 
 namespace NaughtyAttributes
 {
-    public class NaughtyScritpableObject : ScriptableObject {}
+    public class NaughtyScriptableObject : ScriptableObject {}
 }
